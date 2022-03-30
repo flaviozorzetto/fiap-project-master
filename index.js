@@ -10,8 +10,8 @@ import App from "./src/app.js";
     const auth_password = argsArray[2];
 
     const MyApp = new App(sp_url, auth_email, auth_password);
-    
+
     await MyApp.authenticate();
 
-    console.log(MyApp);
+    await MyApp.requestFile();
 })()
