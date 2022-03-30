@@ -1,0 +1,16 @@
+{
+  "name": "fiap-master-project",
+  "version": "1.0.0",
+  "description": "Projeto para integração de arquivos",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^3.2.3",
+    "node-sp-auth": "^3.0.4"
+  }
+}
