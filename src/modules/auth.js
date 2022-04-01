@@ -34,6 +34,11 @@ export default class Auth {
             const dig_value = getDigestValue(raw_data);
             
             app.digest_token = dig_value;
+
+            app.header_auth_opts = {
+                cookie: `${app.fed_auth}; ${app.rtfa}`,
+                "X-RequestDigest": app.digest_token,
+            }
         }
 
         function getDigestValue(data) {
