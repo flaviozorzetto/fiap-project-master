@@ -8,6 +8,7 @@ import Sp_Functions from "./helpers/sp_functions.js";
 export default class App {
     constructor (sp_url, auth_email, auth_password) {
         this.sp_url = sp_url;
+        this.sp_relative_prefix = sp_url.match(/\/sites\/.*/gi)[0];
         this.auth_email = auth_email;
         this.auth_password = auth_password;
         this.fed_auth = undefined;
@@ -20,47 +21,44 @@ export default class App {
         await Auth.requestAuth(this);
     }
 
-
     // master development right now
     async getFolders () {
+        let baseFolderPath = [`${this.sp_relative_prefix}/Shared Documents`]
+
         const sp_func = new Sp_Functions();
-        let url = this.sp_url + "/_api/web/GetFolderByServerRelativeUrl('/sites/msteams_654c7f/Documentos%20Compartilhados')/Folders";
         
-        let folders = await sp_func.getFoldersFromRelativePath(url, this.header_auth_opts);
-        let secondListFolder = [];
+        let allFolderPaths = await this.retrieveAllFoldersList(baseFolderPath, sp_func).then(e => e.flat(Infinity).sort()).catch(err => {throw new Error(err)});
 
-        for(let i = 0; i < folders.length; i++) {
-            let folderUrl = this.sp_url + `/_api/web/GetFolderByServerRelativeUrl('${folders[i]}')/Folders`;
-            
-            secondListFolder.push(await sp_func.getFoldersFromRelativePath(folderUrl, this.header_auth_opts));
-        }
-
-        secondListFolder = secondListFolder.flat();
-
-        for(let i = 0; i < secondListFolder.length; i++) {
-            let folderUrl = this.sp_url + `/_api/web/GetFolderByServerRelativeUrl('${secondListFolder[i]}')/Folders`;
-            
-            await sp_func.getFoldersFromRelativePath(folderUrl, this.header_auth_opts, true);
-        }
-
-
-        // await this.getFileFromFolderList(folders);
-
-
+        console.log(allFolderPaths)
     }
 
-    async getFileFromFolderList(folderList) {
+    async retrieveAllFoldersList(mainFoldersList, sp_func) {
         
-        let folders
+        return await this.wormChain(mainFoldersList, sp_func);
+    
+    }
 
-        let url = this.sp_url + `/_api/web/GetFolderByServerRelativeUrl('${folderList[0]}')/Folders`;
+    async wormChain(fl, sp_func, aTadd = []) {
 
-        await request.get(url, {headers: this.header_auth_opts}, (err, res, body) => {
-            let regexp = /(?<=\<d\:ServerRelativeUrl\>)(.*?)(?=(<\/d\:ServerRelativeUrl\>))/gi;
+        const worm = async (folderList, sp_func, arrayToAdd) => {
+            for(let i = 0; i < folderList.length; i++){
+                
+                let folderUrl = this.sp_url + `/_api/web/GetFolderByServerRelativeUrl('${folderList[i]}')/Folders`;
 
-            folders = body.match(regexp).filter(e => { return !( /form/gi.test(e) | /recordings/gi.test(e)) /* remove form and recordings field folder */ });
-        })
+                let tempArr = await sp_func.getFoldersFromRelativePath(folderUrl, this.header_auth_opts, false)
 
+                arrayToAdd.push(tempArr)
+
+                if(tempArr.length != 0){
+                    await worm (tempArr, sp_func, arrayToAdd);
+                }
+                
+            }
+        }
+
+        await worm(fl, sp_func, aTadd);
+
+        return aTadd
     }
 
 

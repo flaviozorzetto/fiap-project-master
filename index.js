@@ -12,6 +12,7 @@ import App from "./src/app.js";
     const MyApp = new App(sp_url, auth_email, auth_password);
 
     await MyApp.authenticate();
+
     await MyApp.getFolders();
 
     // await MyApp.requestFile();
