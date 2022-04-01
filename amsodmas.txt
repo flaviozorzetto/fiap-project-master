@@ -1,0 +1,139 @@
+import Auth from "./modules/auth.js";
+import * as fs from 'fs';
+import request from "request-promise-native";
+
+// Main Application
+
+export default class App {
+    constructor (sp_url, auth_email, auth_password) {
+        this.sp_url = sp_url;
+        this.auth_email = auth_email;
+        this.auth_password = auth_password;
+        this.fed_auth = undefined;
+        this.rtfa = undefined;
+        this.digest_token = undefined;
+        this.header_auth_opts = undefined
+    }
+
+    async authenticate () {
+        await Auth.requestAuth(this);
+    }
+
+    async getFolders () {
+        let url = this.sp_url + "/_api/web/GetFolderByServerRelativeUrl('/sites/msteams_654c7f/Documentos%20Compartilhados')/Folders";
+
+        await request.get(url, {headers: this.header_auth_opts}, (err, res, body) => {
+            // console.log(res.headers["content-type"])
+            let regexp = /(?<=\<d\:ServerRelativeUrl\>)([a-za-z0-9\/\_\s]+)(?<!(<\/d\:ServerRelativeUrl\>))/gi
+            let folders = body.match(regexp).filter(e => {
+                return !(/form/gi.test(e))
+            })
+            console.log(folders)
+        })
+    }
+
+    async requestFile () {
+        let url = "https://fiapcom.sharepoint.com/sites/msteams_654c7f/_api/Web/GetFileByServerRelativePath(decodedurl='/sites/msteams_654c7f/Documentos%20Compartilhados/Ai%20E%20Chatbot/Procedimento%20para%20e-mail%20pessoal.pdf')/$value"
+
+        const file = fs.createWriteStream('./download/pdf_file.pdf');
+        
+        await this.downloadFile(url, this.header_auth_opts , file);
+
+        console.log("Terminado código")
+    }
+
+    async downloadFile (downloadUrl, header_opts, pipeline) {
+        console.log("Começar Pipeline")
+        return new Promise((res, rej) => {
+            request.get(downloadUrl, {headers: header_opts} ).pipe(pipeline).on("finish", () => {
+                console.log("Terminado Pipeline")
+                pipeline.close();
+                res()
+            })
+        })
+    }
+
+    buildHeaderProp() {
+
+    }
+
+
+
+}
+
+import * as spauth from "node-sp-auth";
+import fetch from 'node-fetch';
+
+export default class Auth {
+    static async requestAuth(app) {
+        async function getCookieAuth () {
+        
+            await spauth.getAuth(app.sp_url, {
+                
+                username: app.auth_email,
+                password: app.auth_password,
+                
+            }).then(data => {
+                
+                const auth_cookie_list = data.headers.Cookie.split("; ");
+                app.fed_auth = auth_cookie_list[0];
+                app.rtfa = auth_cookie_list[1];
+                
+            })
+            
+        }
+
+        async function getToken () {
+            const opts = {
+                method: "post",
+                headers: {
+                    cookie: `${app.fed_auth}; ${app.rtfa}`,
+                }
+            }
+            
+            const response = await fetch (app.sp_url + "/_api/contextinfo", opts);
+            const raw_data = await response.text();
+            
+            const dig_value = getDigestValue(raw_data);
+            
+            app.digest_token = dig_value;
+
+            app.header_auth_opts = {
+                cookie: `${app.fed_auth}; ${app.rtfa}`,
+                "X-RequestDigest": app.digest_token,
+            }
+        }
+
+        function getDigestValue(data) {
+            const regex = /(?<=\<d:FormDigestValue\>)((\d|\D)+)(?=\,)/g;
+            
+            return regex.test(data) ? data.match(regex)[0] : "null";
+        }
+
+        await getCookieAuth();
+        await getToken();
+    }
+}
+
+import { Args_Regex_Handler } from "./src/helpers/args_handler.js";
+import App from "./src/app.js";
+
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+(async () => {
+    // Create error handler for args
+
+    let argsArray = process.argv.slice(2);
+    const sp_url = argsArray[0];
+    const auth_email = argsArray[1];
+    const auth_password = argsArray[2];
+
+    const MyApp = new App(sp_url, auth_email, auth_password);
+
+    await MyApp.authenticate();
+
+    await MyApp.getFolders();
+
+    // await MyApp.requestFile();
+
+})()
