@@ -3,6 +3,14 @@ import fetch from 'node-fetch';
 
 export default class Auth {
     static async requestAuth(app) {
+        if(app.sp_url == undefined){
+            if(app.auth_email.includes(".br")){
+                app.sp_url = "https://" + app.auth_email.match(/(?<=\@)(.*?)(?=\.br)/gi)[0].replaceAll(".", "") + ".sharepoint.com"
+            } else {
+                app.sp_url = "https://" + app.auth_email.match(/(?<=\@)(.*)/gi)[0].replaceAll(".", "") + ".sharepoint.com"
+            }
+        }
+
         async function getCookieAuth () {
         
             await spauth.getAuth(app.sp_url, {
@@ -49,5 +57,6 @@ export default class Auth {
 
         await getCookieAuth();
         await getToken();
+
     }
 }
