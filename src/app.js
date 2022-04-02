@@ -25,7 +25,9 @@ export default class App {
     }
 
     async authenticate () {
+        console.log("Autenticando no aplicativo...")
         await Auth.requestAuth(this);
+        console.log("Autenticado!")
     }
 
     // master development right now
@@ -37,12 +39,14 @@ export default class App {
 
         let baseFolderPath = [`${this.sp_relative_prefix}/${this.sp_base_folder_name}`];
         
+        console.log("Pesquisando todos os paths das pastas do sistema...")
         let allFolderPaths = await this.retrieveAllFoldersList(baseFolderPath, sp_func);
-
-        console.log("Folders:", allFolderPaths)
+        console.log("Pastas pesquisados:", allFolderPaths)
         
+        
+        console.log("Pesquisando todos os paths dos arquivos do sistema...")
         let allFilePaths = await this.getFilePaths(allFolderPaths, sp_func);
-        console.log("Files:", allFilePaths)
+        console.log("Arquivos pesquisados:", allFilePaths)
         
     }
 

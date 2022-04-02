@@ -8,7 +8,8 @@ export default class Sp_Link {
 
         await request.get(baseUrl, {headers: app.header_auth_opts}, (err, res, body) => {
             const regex = new RegExp(`(?<=${app.sp_url + "/sites/"})(.*?)(?=\\\\|\/)`, "gi");
-            const regex2 = /(?<=https:\/\/etecspgov.sharepoint.com\/sites\/)(.*?)(?=\\|\/)/gi;
+            // Example regex
+            // const regex2 = /(?<=https:\/\/etecspgov.sharepoint.com\/sites\/)(.*?)(?=\\|\/)/gi;
             
             let posUrls = res.body.match(regex);
             urls.push([...new Set(posUrls)].map(e => {
