@@ -1,20 +1,48 @@
-import { Args_Regex_Handler } from "./src/helpers/args_handler.js";
+import prompt from "prompt";
+import minimist from "minimist";
+import colors from "@colors/colors/safe.js";
 import App from "./src/app.js";
 
 (async () => {
-    // Clear Terminal 
+    // Clear Terminal
     process.stdout.write('\x1Bc'); 
 
-    // Create error handler for args
+    console.log("Insira as informações: \n");
 
-    let argsArray = process.argv.slice(2);
+    const schema = {
+        properties: {
+            url: {
+                description: colors.white("Insira a url ") + colors.white("(opcional)"),
+                required: false,
+            },
+            user: {
+                description: colors.white("Insira um usuário ") + colors.red.bold("(obrigatório)"),
+                message: "Usúario não inserido, insira um usuário ou saia do processo usando Ctrl + C",
+                required: true,
+            },
+            password: {
+                description: colors.white("Insira a senha ") + colors.red.bold("(obrigatório)"),
+                message: "Senha não inserida, insira uma senha ou saia do processo usando Ctrl + C",
+                hidden: true,
+                required: true,
+                replace: "*",
+            }
+        }
+    }
 
-    if(argsArray.length == 3) {
-        const sp_url = argsArray[0];
-        const auth_email = argsArray[1];
-        const auth_password = argsArray[2];
-    
-        const MyApp = new App({sp_url : sp_url, auth_email : auth_email, auth_password : auth_password});
+    prompt.start();
+    prompt.message = ""
+
+    let argv = minimist(process.argv.slice(2));
+
+    Object.entries(argv).length != 1 ? (prompt.override = argv, argv.url ? null : delete schema.properties.url) : null ;
+
+    const promptResult = await prompt.get(schema);
+
+    promptResult.url == "" ? delete promptResult.url : null;
+
+    if(promptResult.hasOwnProperty("url")) {
+        const MyApp = new App({sp_url : promptResult.url, auth_email : promptResult.user, auth_password : promptResult.password});
     
         await MyApp.authenticate();
     
@@ -23,18 +51,13 @@ import App from "./src/app.js";
         // await MyApp.requestFile();
 
     } else {
-
-        const auth_email = argsArray[0];
-        const auth_password = argsArray[1];
-
-        const MyApp = new App({auth_email: auth_email, auth_password: auth_password});
+        const MyApp = new App({auth_email : promptResult.user, auth_password : promptResult.password});
 
         await MyApp.authenticate();
 
         const links = await MyApp.getSpUrls();
 
         console.log("Links retornados:", links)
-
     }
 
 })()

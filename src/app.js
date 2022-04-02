@@ -25,7 +25,7 @@ export default class App {
     }
 
     async authenticate () {
-        console.log("Autenticando no aplicativo...")
+        console.log("Autenticando no Sharepoint...")
         await Auth.requestAuth(this);
         console.log("Autenticado!")
     }
