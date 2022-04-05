@@ -3,16 +3,16 @@ import minimist from "minimist";
 import colors from "@colors/colors/safe.js";
 
 export default class Prompter {
-    async build (forDownload=false) {
+    async build(forDownload = false) {
         // Clear Terminal
-        process.stdout.write('\x1Bc'); 
+        process.stdout.write('\x1Bc');
 
         console.log("Insira as informações: \n");
 
         const schema = {
             properties: {
                 url: {
-                    description: colors.white("Insira a url ") + (forDownload ? colors.red.bold("(obrigatório)") : colors.white("(opcional)") ),
+                    description: colors.white("Insira a url ") + (forDownload ? colors.red.bold("(obrigatório)") : colors.white("(opcional)")),
                     required: forDownload,
                 },
                 user: {
@@ -37,9 +37,9 @@ export default class Prompter {
 
         let argv = minimist(process.argv.slice(2));
 
-        if(Object.entries(argv).length != 1) {
+        if (Object.entries(argv).length != 1) {
             prompt.override = argv
-            if(forDownload == false){
+            if (forDownload == false) {
                 argv.url ? null : delete schema.properties.url
             }
         }
