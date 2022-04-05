@@ -1,7 +1,7 @@
 import * as spauth from "node-sp-auth";
 import fetch from 'node-fetch';
 
-export default class Auth {
+export default class Sp_Auth {
     static async requestAuth(app) {
         if(app.sp_url == undefined){
             if(app.auth_email.includes(".br")){

@@ -1,18 +1,28 @@
-import Auth from "./modules/auth.js";
-import Sp_Link from "./modules/sp_link.js";
-import * as fs from 'fs';
-import request from "request-promise-native";
-import Sp_Functions from "./helpers/sp_functions.js";
+import Sp_Auth from "./modules/sp/sp_auth.js";
+import Sp_Link from "./modules/sp/sp_link.js";
+import Sp_Explorer from "./modules/sp/sp_explorer.js";
+import Sp_Downloader from "./modules/sp/sp_downloader.js";
 
 // Main Application
 
 export default class App {
     constructor ({sp_url, auth_email, auth_password}) {
+        //url props
         this.sp_url = sp_url ? sp_url : undefined;
         this.sp_relative_prefix = sp_url ? sp_url.match(/\/sites\/.*/gi)[0] : undefined;
         this.sp_base_folder_name = undefined
+
+        //folder props
+        this.directoryInfo = { 
+            foldersPath : [],
+            filesPath : [],
+        }
+        
+        //credential props
         this.auth_email = auth_email;
         this.auth_password = auth_password;
+
+        //endpoint auth props
         this.fed_auth = undefined;
         this.rtfa = undefined;
         this.digest_token = undefined;
@@ -26,90 +36,22 @@ export default class App {
 
     async authenticate () {
         console.log("Autenticando no Sharepoint...")
-        await Auth.requestAuth(this);
+        await Sp_Auth.requestAuth(this);
         console.log("Autenticado!")
     }
 
-    // master development right now
-    async getFolders () {
+    async getFolders (showFiles = false) {
+        const sp_explorer = new Sp_Explorer();
 
-        const sp_func = new Sp_Functions();
-        
-        this.sp_base_folder_name = await sp_func.getBaseFolderName(this.sp_url, this.header_auth_opts);
+        await sp_explorer.getAllDirectoryInfo(this)
 
-        let baseFolderPath = [`${this.sp_relative_prefix}/${this.sp_base_folder_name}`];
-        
-        console.log("Pesquisando todos os paths das pastas do sistema...")
-        let allFolderPaths = await this.retrieveAllFoldersList(baseFolderPath, sp_func);
-        console.log("Pastas pesquisados:", allFolderPaths)
-        
-        
-        console.log("Pesquisando todos os paths dos arquivos do sistema...")
-        let allFilePaths = await this.getFilePaths(allFolderPaths, sp_func);
-        console.log("Arquivos pesquisados:", allFilePaths)
-        
+        showFiles ? console.log(this.directoryInfo) : null;
     }
 
-    async retrieveAllFoldersList(mainFoldersList, sp_func) {
-        
-        return await this.wormChain(mainFoldersList, sp_func).then(e => e.flat(Infinity).sort()).catch(err => {throw new Error(err)});
-    
-    }
+    async downloadFiles () {
+        let sp_downloader = new Sp_Downloader(this.sp_url, this.directoryInfo, this.header_auth_opts);
 
-    async wormChain(fl, sp_func, aTadd = []) {
-
-        const worm = async (folderList, sp_func, arrayToAdd) => {
-            for(let i = 0; i < folderList.length; i++){
-                
-                let folderUrl = this.sp_url + `/_api/web/GetFolderByServerRelativeUrl('${folderList[i]}')/Folders`;
-
-                let tempArr = await sp_func.getFoldersFromRelativePath(folderUrl, this.header_auth_opts)
-
-                arrayToAdd.push(tempArr)
-
-                if(tempArr.length != 0){
-                    await worm (tempArr, sp_func, arrayToAdd);
-                }
-            }
-        }
-
-        await worm(fl, sp_func, aTadd);
-
-        return aTadd
-    }
-
-    async getFilePaths (folderPathsList, sp_func) {
-        let returnPaths = [];
-
-        for(let i = 0; i < folderPathsList.length; i++) {
-            let fileUrl = this.sp_url + `/_api/web/GetFolderByServerRelativeUrl('${folderPathsList[i]}')/Files`;
-
-            returnPaths.push(await sp_func.getFilePathsFromRelativePath(fileUrl, this.header_auth_opts));
-        }
-
-        return returnPaths.flat(Infinity).sort();
-    }
-
-    // testing experimental (important) //
-    async requestFile () {
-        let url = "https://fiapcom.sharepoint.com/sites/msteams_654c7f/_api/Web/GetFileByServerRelativePath(decodedurl='/sites/msteams_654c7f/Documentos%20Compartilhados/Ai%20E%20Chatbot/Procedimento%20para%20e-mail%20pessoal.pdf')/$value"
-
-        const file = fs.createWriteStream('./download/pdf_file.pdf');
-        
-        await this.downloadFile(url, this.header_auth_opts , file);
-
-        console.log("Terminado código")
-    }
-
-    async downloadFile (downloadUrl, header_opts, pipeline) {
-        console.log("Começar Pipeline")
-        return new Promise((res, rej) => {
-            request.get(downloadUrl, {headers: header_opts} ).pipe(pipeline).on("finish", () => {
-                console.log("Terminado Pipeline")
-                pipeline.close();
-                res()
-            })
-        })
+        await sp_downloader.enqueueFiles("./download");
     }
 
 }
