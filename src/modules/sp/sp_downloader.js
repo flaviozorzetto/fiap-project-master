@@ -17,7 +17,7 @@ export default class Sp_Downloader {
             let restUrl = this.sp_url + `/_api/Web/GetFileByServerRelativePath(decodedurl='${encodeURI(filesPath[i])}')/$value`
 
             let fileExt = filesPath[i].match(/(\.)(\w+?)$/i)[0];
-            let text = "Baixando arquivo " + i + " de " + filesPath.length;
+            let text = "Baixando arquivo " + (i + 1) + " de " + filesPath.length;
 
             const file = fs.createWriteStream(path + "/file_" + i + fileExt);
 
