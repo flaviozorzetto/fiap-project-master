@@ -10,20 +10,30 @@ export default class Sp_Downloader {
 
     async enqueueFiles(path) {
         let filesPath = this.directoryInfo.filesPath
+        let t = 10
 
         console.time("Tempo de execução:");
-        for(let i = 0; i < filesPath.length; i++) {
+        for(let i = 0; i < filesPath.length; i+=t) {
+            let restUrlsObj = { }
+            let fileExtObj = { }
+            let textObj = { }
+            let filesObj = { }
+            let downloadersArr = []
 
-            let restUrl = this.sp_url + `/_api/Web/GetFileByServerRelativePath(decodedurl='${encodeURI(filesPath[i])}')/$value`
+            for(let x = i; x < i + t; x++) {
+                restUrlsObj["restUrl_" + x] = this.sp_url + `/_api/Web/GetFileByServerRelativePath(decodedurl='${encodeURI(filesPath[x])}')/$value`;
+                fileExtObj["fileExt_" + x] = filesPath[x].match(/(\.)(\w+?)$/i)[0];
+                textObj["text_" + x] = "Baixando arquivo " + x + " de " + filesPath.length;
+                filesObj["file_" + x] = fs.createWriteStream(path + "/file_" + x + fileExtObj["fileExt_" + x]);
+                downloadersArr.push(this.downloadFile(restUrlsObj["restUrl_" + x], this.header_auth_opts, filesObj["file_" + x],textObj["text_" + x])) 
+            }
 
-            let fileExt = filesPath[i].match(/(\.)(\w+?)$/i)[0];
-            let text = "Baixando arquivo " + i + " de " + filesPath.length;
+            await Promise.all(downloadersArr)
 
-            const file = fs.createWriteStream(path + "/file_" + i + fileExt);
-
-            await this.downloadFile(restUrl, this.header_auth_opts, file, text)
+            break
         }
         console.timeEnd("Tempo de execução:");
+
     }
 
     async downloadFile (downloadUrl, header_opts, pipeline, text) {
@@ -31,6 +41,7 @@ export default class Sp_Downloader {
         return new Promise((res, rej) => {
             request.get(downloadUrl, {headers: header_opts} ).pipe(pipeline).on("finish", () => {
                 pipeline.close();
+                console.log("Arquivo: " + text + " Finalizado")
                 res()
             })
         })
