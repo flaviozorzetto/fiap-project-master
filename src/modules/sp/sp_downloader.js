@@ -10,10 +10,16 @@ export default class Sp_Downloader {
 
     async enqueueFiles(path) {
         let filesPath = this.directoryInfo.filesPath
-        let t = 10
+        let t = 50
 
         console.time("Tempo de execução:");
         for(let i = 0; i < filesPath.length; i+=t) {
+            let shouldBreak = false
+            if(i + t >= filesPath.length){
+                console.log(i,t,filesPath.length)
+                t = filesPath.length - i;
+                shouldBreak = true
+            }
             let restUrlsObj = { }
             let fileExtObj = { }
             let textObj = { }
@@ -30,7 +36,9 @@ export default class Sp_Downloader {
 
             await Promise.all(downloadersArr)
 
-            break
+            if(shouldBreak){
+                break
+            }
         }
         console.timeEnd("Tempo de execução:");
 
