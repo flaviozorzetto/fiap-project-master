@@ -12,6 +12,8 @@ import Prompter from "./src/modules/prompt/prompter.js";
 
     await MyApp.getFolders();
 
-    await MyApp.downloadFiles();
+    await MyApp.downloadFiles(promptResult.regex);
+
+    process.exit(0);
 
 })()

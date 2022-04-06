@@ -48,10 +48,10 @@ export default class App {
         showFiles ? console.log(this.directoryInfo) : null;
     }
 
-    async downloadFiles() {
-        let sp_downloader = new Sp_Downloader(this.sp_url, this.directoryInfo, this.header_auth_opts);
-
-        await sp_downloader.enqueueFiles("./download");
+    async downloadFiles(regex) {
+        let sp_downloader = new Sp_Downloader(this.sp_url, this.directoryInfo, this.header_auth_opts, this.sp_base_folder_name);
+        
+        await sp_downloader.enqueueFiles("./download", regex);
     }
 
 }

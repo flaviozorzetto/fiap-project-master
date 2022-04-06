@@ -31,6 +31,10 @@ export default class Prompter {
         }
 
         forDownload ? schema.properties.url.message = "Url não inserido, insira uma Url ou saia do processo usando Ctrl + C" : null
+        forDownload ? schema.properties.regex = {
+            description: colors.white("Insira palavras chaves para dar match ") + colors.white("(opcional)"),
+            required: false,
+        } : null
 
         prompt.start();
         prompt.message = ""

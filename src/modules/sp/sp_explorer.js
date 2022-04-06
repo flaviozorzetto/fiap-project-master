@@ -31,7 +31,7 @@ export default class Sp_Explorer {
 
     async getBaseFolderName(url, headers) {
         let folderName
-        console.log("Pegando o nome base para montagem da url...")
+        // console.log("Pegando o nome base para montagem da url...")
         await request.get(url, { headers: headers }, (err, res, body) => {
             let regexp = /(shared documents|documentos compartilhados)/gi
             let tempArr = res.body.match(/(\"Url\"\:\"\/)(.{1,200})/gi).filter(e => {
@@ -39,7 +39,7 @@ export default class Sp_Explorer {
             });
             folderName = tempArr[0].match(regexp)[0]
         })
-        console.log("Nome base:", folderName)
+        // console.log("Nome base:", folderName)
         return folderName
     }
 
